@@ -1,0 +1,1 @@
+# goofish-ru-helper
