@@ -1,3 +1,4 @@
+
 name: Build APK
 
 on:
@@ -10,23 +11,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip project
-        run: unzip GoofishTranslator-cloud-build.zip
+      - name: Find project archive
+        run: |
+          find . -name 'GoofishTranslator-cloud-build.zip'
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Unzip project
+        run: |
+          unzip -o GoofishTranslator-cloud-build.zip -d project
+          find project -name settings.gradle -print
+
+      - name: Locate Android project
+        run: |
+          PROJECT_DIR="$(dirname "$(find project -name settings.gradle -print -quit)")"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          test -n "$PROJECT_DIR"
+
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Grant execute permission
-        run: chmod +x gradlew || true
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: |
+          cd "$PROJECT_DIR"
+          gradle assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: GoofishTranslator-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: project/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
